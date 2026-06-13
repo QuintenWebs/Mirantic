@@ -1,0 +1,313 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Plus, Trash2, Loader2, Pencil, ExternalLink, FileText } from "lucide-react";
+import { toast } from "sonner";
+import { useApi } from "@/lib/api";
+import { useFetch } from "@/lib/useFetch";
+import type { AdminSite } from "@/lib/types";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState, EmptyState } from "@/components/states";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+interface SiteForm {
+  name: string;
+  url: string;
+  githubRepo: string;
+  githubBranch: string;
+  contentPath: string;
+  deployHookUrl: string;
+  hasBlog: boolean;
+}
+
+const EMPTY_FORM: SiteForm = {
+  name: "",
+  url: "",
+  githubRepo: "",
+  githubBranch: "main",
+  contentPath: "src/content.json",
+  deployHookUrl: "",
+  hasBlog: false,
+};
+
+export default function AdminSites() {
+  const api = useApi();
+  const { data, loading, error, refetch } = useFetch<AdminSite[]>(
+    (c) => c.get<AdminSite[]>("/api/admin/sites"),
+    []
+  );
+
+  const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<SiteForm>(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  function openCreate() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setOpen(true);
+  }
+
+  function openEdit(site: AdminSite) {
+    setEditingId(site.id);
+    setForm({
+      name: site.name,
+      url: site.url,
+      githubRepo: site.githubRepo,
+      githubBranch: site.githubBranch,
+      contentPath: site.contentPath,
+      deployHookUrl: site.deployHookUrl ?? "",
+      hasBlog: site.hasBlog,
+    });
+    setOpen(true);
+  }
+
+  const set = <K extends keyof SiteForm>(key: K, value: SiteForm[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    try {
+      if (editingId) {
+        await api.patch(`/api/admin/sites?id=${editingId}`, form);
+        toast.success("Site updated");
+      } else {
+        await api.post("/api/admin/sites", form);
+        toast.success("Site created");
+      }
+      setOpen(false);
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save site");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(site: AdminSite) {
+    if (!confirm(`Delete ${site.name}? This removes its CMS record (not the repo).`)) return;
+    setDeletingId(site.id);
+    try {
+      await api.del(`/api/admin/sites?id=${site.id}`);
+      toast.success("Site deleted");
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete site");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  const valid = form.name.trim() && form.url.trim() && /^[^/]+\/[^/]+$/.test(form.githubRepo);
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Sites</h1>
+        <Button onClick={openCreate}>
+          <Plus className="h-4 w-4" /> Add site
+        </Button>
+      </div>
+
+      {loading && (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+      )}
+
+      {!loading && error && <ErrorState message={error} onRetry={refetch} />}
+
+      {!loading && !error && data && data.length === 0 && (
+        <EmptyState
+          title="No sites yet"
+          description="Add a client site to start managing its content."
+          action={
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" /> Add site
+            </Button>
+          }
+        />
+      )}
+
+      {!loading && !error && data && data.length > 0 && (
+        <div className="space-y-3">
+          {data.map((site) => (
+            <Card key={site.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-medium">{site.name}</p>
+                    {site.hasBlog && (
+                      <Badge variant="secondary">
+                        <FileText className="mr-1 h-3 w-3" /> Blog
+                      </Badge>
+                    )}
+                  </div>
+                  <a
+                    href={site.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    {site.url}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">
+                    {site.githubRepo} · {site.githubBranch} · {site.contentPath}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">
+                      {lastPublished(site.lastPublishedAt)}
+                    </span>
+                    {site.clients.length > 0 && (
+                      <span className="text-xs text-muted-foreground">·</span>
+                    )}
+                    {site.clients.map((c) => (
+                      <Badge key={c.id} variant="outline">
+                        {c.name || c.email}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/sites/${site.id}`}>Open editor</Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEdit(site)}
+                    title="Edit settings"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive"
+                    disabled={deletingId === site.id}
+                    onClick={() => handleDelete(site)}
+                    title="Delete site"
+                  >
+                    {deletingId === site.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit site" : "Add site"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <FormRow label="Name">
+              <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
+            </FormRow>
+            <FormRow label="URL" hint="The live site URL loaded in the editor">
+              <Input
+                value={form.url}
+                onChange={(e) => set("url", e.target.value)}
+                placeholder="https://clientsite.com"
+              />
+            </FormRow>
+            <FormRow label="GitHub repo" hint="owner/repo">
+              <Input
+                value={form.githubRepo}
+                onChange={(e) => set("githubRepo", e.target.value)}
+                placeholder="mirantic/client-site"
+              />
+            </FormRow>
+            <div className="grid grid-cols-2 gap-3">
+              <FormRow label="Branch">
+                <Input
+                  value={form.githubBranch}
+                  onChange={(e) => set("githubBranch", e.target.value)}
+                />
+              </FormRow>
+              <FormRow label="Content path">
+                <Input
+                  value={form.contentPath}
+                  onChange={(e) => set("contentPath", e.target.value)}
+                />
+              </FormRow>
+            </div>
+            <FormRow label="Vercel deploy hook URL" hint="Optional">
+              <Input
+                value={form.deployHookUrl}
+                onChange={(e) => set("deployHookUrl", e.target.value)}
+                placeholder="https://api.vercel.com/v1/integrations/deploy/…"
+              />
+            </FormRow>
+            <div className="flex items-center gap-2 pt-1">
+              <Switch
+                id="has-blog"
+                checked={form.hasBlog}
+                onCheckedChange={(v) => set("hasBlog", v)}
+              />
+              <Label htmlFor="has-blog">This site has a blog</Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={!valid || submitting}>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {editingId ? "Save changes" : "Create site"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function FormRow({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between">
+        <Label>{label}</Label>
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function lastPublished(at: string | null): string {
+  if (!at) return "Never published";
+  const d = new Date(at);
+  return `Last published ${d.toLocaleDateString()}`;
+}

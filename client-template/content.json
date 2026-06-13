@@ -1,0 +1,27 @@
+{
+  "hero": {
+    "title": "We build things that matter",
+    "subtitle": "A short, punchy line about what this company does.",
+    "image": "https://placehold.co/1200x600"
+  },
+  "about": {
+    "heading": "About us",
+    "body": "Tell the story of the company here. This text is fully editable from the CMS."
+  },
+  "contact": {
+    "email": "hello@clientsite.com",
+    "phone": "+31 6 1234 5678"
+  },
+  "blog": {
+    "posts": [
+      {
+        "title": "Our first post",
+        "slug": "our-first-post",
+        "date": "2026-01-15",
+        "author": "Jane Doe",
+        "cover": "https://placehold.co/800x400",
+        "body": "# Hello world\n\nThis is the post body in **markdown**."
+      }
+    ]
+  }
+}
