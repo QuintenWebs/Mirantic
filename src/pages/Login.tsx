@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CenteredSpinner } from "@/components/states";
 
 export default function Login() {
-  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const { isAuthenticated, isLoading, loginWithRedirect, error } = useAuth0();
   const location = useLocation();
+  const [submitting, setSubmitting] = useState(false);
   const returnTo = (location.state as { returnTo?: string } | null)?.returnTo || "/";
 
   if (isLoading) {
@@ -18,6 +20,17 @@ export default function Login() {
 
   if (isAuthenticated) {
     return <Navigate to={returnTo} replace />;
+  }
+
+  async function handleLogin() {
+    setSubmitting(true);
+    try {
+      await loginWithRedirect({ appState: { returnTo } });
+    } catch (e) {
+      // Surface, rather than silently swallow, a failed redirect.
+      console.error("loginWithRedirect failed:", e);
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -33,11 +46,15 @@ export default function Login() {
         <p className="mt-1 text-sm text-muted-foreground">
           Manage and publish content for your website.
         </p>
-        <Button
-          className="mt-6 w-full"
-          onClick={() => loginWithRedirect({ appState: { returnTo } })}
-        >
-          Continue
+
+        {error && (
+          <p className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error.message}
+          </p>
+        )}
+
+        <Button className="mt-6 w-full" onClick={handleLogin} disabled={submitting}>
+          {submitting ? "Redirecting…" : "Continue"}
         </Button>
       </div>
     </div>
