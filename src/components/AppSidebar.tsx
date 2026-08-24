@@ -166,7 +166,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
               Dashboard
             </NavItem>
             <NavItem to="/admin/clients" icon={Users} onNavigate={onNavigate}>
-              Clients
+              Users
             </NavItem>
             <NavItem to="/admin/sites" icon={Globe} onNavigate={onNavigate}>
               Manage sites

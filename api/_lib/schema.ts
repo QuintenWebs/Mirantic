@@ -22,6 +22,10 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name").notNull().default(""),
   role: roleEnum("role").notNull().default("client"),
+  // Deactivated users keep their row, their site assignments and their history;
+  // they simply cannot sign in. Deleting would cascade the assignments away and
+  // lose who published what.
+  active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

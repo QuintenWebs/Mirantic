@@ -71,7 +71,7 @@ export async function requireUser(req: VercelRequest): Promise<User> {
   const existing = await db.query.users.findFirst({
     where: eq(schema.users.auth0Id, auth0Id),
   });
-  if (existing) return existing;
+  if (existing) return assertActive(existing);
 
   // Standard claims may live under a namespaced key depending on Auth0 setup;
   // fall back gracefully.
@@ -115,7 +115,19 @@ export async function requireUser(req: VercelRequest): Promise<User> {
     .set({ auth0Id, name: name || invited.name })
     .where(eq(schema.users.id, invited.id))
     .returning();
-  return linked;
+  return assertActive(linked);
+}
+
+/**
+ * A deactivated account keeps its row, assignments and history but cannot sign
+ * in. Checked on every request, not just at login, so revoking access takes
+ * effect immediately rather than whenever the token happens to expire.
+ */
+function assertActive(user: User): User {
+  if (!user.active) {
+    throw new HttpError(403, "This account has been deactivated. Contact your administrator.");
+  }
+  return user;
 }
 
 export async function requireAdmin(req: VercelRequest): Promise<User> {

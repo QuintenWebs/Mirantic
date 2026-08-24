@@ -16,17 +16,18 @@ interface ClientWithSites {
   email: string;
   role: string;
   createdAt: Date;
+  active: boolean;
   sites: { id: string; name: string; canEdit: boolean; canPublish: boolean }[];
 }
 
 export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
-  await requireAdmin(req);
+  const admin = await requireAdmin(req);
 
   // ── GET /api/admin/clients[?id=] ──
   if (req.method === "GET") {
     const id = req.query.id as string | undefined;
     const clients = await db.query.users.findMany({
-      where: id ? eq(schema.users.id, id) : eq(schema.users.role, "client"),
+      where: id ? eq(schema.users.id, id) : undefined,
       orderBy: (u, { asc }) => asc(u.name),
     });
 
@@ -59,6 +60,7 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
       email: c.email,
       role: c.role,
       createdAt: c.createdAt,
+      active: c.active,
       sites: byUser.get(c.id) ?? [],
     }));
 
@@ -124,6 +126,38 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
+  // ── PATCH /api/admin/clients?id=... → activate or deactivate ──
+  if (req.method === "PATCH") {
+    const id = req.query.id as string;
+    if (!id) throw new HttpError(400, "id is required");
+    const { active } = readBody<{ active?: boolean }>(req);
+    if (typeof active !== "boolean") throw new HttpError(400, "active must be true or false");
+
+    const target = await db.query.users.findFirst({ where: eq(schema.users.id, id) });
+    if (!target) throw new HttpError(404, "User not found");
+
+    if (!active) {
+      // Two ways to lock yourself out of your own CMS, both worth refusing.
+      if (target.id === admin.id) {
+        throw new HttpError(400, "You cannot deactivate your own account");
+      }
+      if (target.role === "admin") {
+        const admins = await db.query.users.findMany({ where: eq(schema.users.role, "admin") });
+        if (admins.filter((a) => a.active && a.id !== target.id).length === 0) {
+          throw new HttpError(400, "That is the last active admin — promote someone else first");
+        }
+      }
+    }
+
+    const [updated] = await db
+      .update(schema.users)
+      .set({ active })
+      .where(eq(schema.users.id, id))
+      .returning();
+    res.status(200).json(updated);
+    return;
+  }
+
   // ── DELETE /api/admin/clients?id=... ──
   if (req.method === "DELETE") {
     const id = req.query.id as string;
@@ -142,5 +176,5 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  return methodNotAllowed(res, ["GET", "POST", "DELETE"]);
+  return methodNotAllowed(res, ["GET", "POST", "PATCH", "DELETE"]);
 });

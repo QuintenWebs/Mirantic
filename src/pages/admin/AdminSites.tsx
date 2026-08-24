@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Trash2, Loader2, Pencil, ExternalLink, FileText } from "lucide-react";
+import { Plus, Trash2, Loader2, Pencil, ExternalLink, FileText, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useApi } from "@/lib/api";
 import { useFetch } from "@/lib/useFetch";
 import type { AdminSite } from "@/lib/types";
 import { Card } from "@/components/ui/card";
+import { SiteAccessDialog } from "@/components/SiteAccessDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,7 @@ export default function AdminSites() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const touch = (field: string) => setTouched((t) => ({ ...t, [field]: true }));
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [accessSite, setAccessSite] = useState<AdminSite | null>(null);
 
   function openCreate() {
     setTouched({});
@@ -196,17 +198,22 @@ export default function AdminSites() {
                     <span className="text-xs text-muted-foreground">
                       {lastPublished(site.lastPublishedAt)}
                     </span>
-                    {site.clients.length > 0 && (
-                      <span className="text-xs text-muted-foreground">·</span>
+                    <span className="text-xs text-muted-foreground">·</span>
+                    {site.clients.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">No users assigned</span>
+                    ) : (
+                      site.clients.map((c) => (
+                        <Badge key={c.id} variant="outline">
+                          {c.name || c.email}
+                        </Badge>
+                      ))
                     )}
-                    {site.clients.map((c) => (
-                      <Badge key={c.id} variant="outline">
-                        {c.name || c.email}
-                      </Badge>
-                    ))}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                  <Button variant="outline" size="sm" onClick={() => setAccessSite(site)}>
+                    <Users className="h-4 w-4" /> Users
+                  </Button>
                   <Button variant="outline" size="sm" asChild>
                     <Link to={`/sites/${site.id}`}>Open editor</Link>
                   </Button>
@@ -238,6 +245,13 @@ export default function AdminSites() {
           ))}
         </div>
       )}
+
+      <SiteAccessDialog
+        site={accessSite}
+        open={Boolean(accessSite)}
+        onOpenChange={(o) => !o && setAccessSite(null)}
+        onChanged={refetch}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">

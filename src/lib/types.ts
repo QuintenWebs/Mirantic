@@ -71,6 +71,8 @@ export interface Client {
   email: string;
   role: Role;
   createdAt: string;
+  /** Deactivated users keep their data but cannot sign in. */
+  active: boolean;
   sites: ClientSiteRef[];
 }
 
