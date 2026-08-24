@@ -52,15 +52,19 @@ export default function AdminSites() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<SiteForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (field: string) => setTouched((t) => ({ ...t, [field]: true }));
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function openCreate() {
+    setTouched({});
     setEditingId(null);
     setForm(EMPTY_FORM);
     setOpen(true);
   }
 
   function openEdit(site: AdminSite) {
+    setTouched({});
     setEditingId(site.id);
     setForm({
       name: site.name,
@@ -78,13 +82,19 @@ export default function AdminSites() {
     setForm((f) => ({ ...f, [key]: value }));
 
   async function handleSubmit() {
+    if (!valid) {
+      setTouched({ name: true, url: true, githubRepo: true, contentPath: true });
+      return;
+    }
+    // Persist the cleaned-up values so the stored repo is always owner/repo.
+    const payload = { ...form, githubRepo: repo ?? form.githubRepo, url: url ?? form.url };
     setSubmitting(true);
     try {
       if (editingId) {
-        await api.patch(`/api/admin/sites?id=${editingId}`, form);
+        await api.patch(`/api/admin/sites?id=${editingId}`, payload);
         toast.success("Site updated");
       } else {
-        await api.post("/api/admin/sites", form);
+        await api.post("/api/admin/sites", payload);
         toast.success("Site created");
       }
       setOpen(false);
@@ -110,7 +120,20 @@ export default function AdminSites() {
     }
   }
 
-  const valid = form.name.trim() && form.url.trim() && /^[^/]+\/[^/]+$/.test(form.githubRepo);
+  // Accept what people actually paste — a repo URL, a bare domain — and say what
+  // is wrong when it can't be understood, rather than just disabling the button.
+  const repo = normalizeRepo(form.githubRepo);
+  const url = normalizeUrl(form.url);
+  const problems: Record<string, string> = {};
+  if (!form.name.trim()) problems.name = "Give the site a name.";
+  if (!form.url.trim()) problems.url = "The live site URL is required.";
+  else if (!url) problems.url = "That doesn't look like a web address.";
+  if (!form.githubRepo.trim()) problems.githubRepo = "The repo holding the content file is required.";
+  else if (!repo)
+    problems.githubRepo =
+      "Use owner/repo, or paste the repository's GitHub URL and it'll be converted.";
+  if (!form.contentPath.trim()) problems.contentPath = "Where the content file lives in the repo.";
+  const valid = Object.keys(problems).length === 0;
 
   return (
     <div>
@@ -223,20 +246,36 @@ export default function AdminSites() {
           </DialogHeader>
 
           <div className="space-y-3">
-            <FormRow label="Name">
-              <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
+            <FormRow label="Name" error={touched.name ? problems.name : undefined}>
+              <Input
+                value={form.name}
+                onChange={(e) => set("name", e.target.value)}
+                onBlur={() => touch("name")}
+              />
             </FormRow>
-            <FormRow label="URL" hint="The live site URL loaded in the editor">
+            <FormRow
+              label="URL"
+              hint="The live site URL loaded in the editor"
+              error={touched.url ? problems.url : undefined}
+              note={url && url !== form.url.trim() ? `Will be saved as ${url}` : undefined}
+            >
               <Input
                 value={form.url}
                 onChange={(e) => set("url", e.target.value)}
+                onBlur={() => touch("url")}
                 placeholder="https://clientsite.com"
               />
             </FormRow>
-            <FormRow label="GitHub repo" hint="owner/repo">
+            <FormRow
+              label="GitHub repo"
+              hint="owner/repo"
+              error={touched.githubRepo ? problems.githubRepo : undefined}
+              note={repo && repo !== form.githubRepo.trim() ? `Will be saved as ${repo}` : undefined}
+            >
               <Input
                 value={form.githubRepo}
                 onChange={(e) => set("githubRepo", e.target.value)}
+                onBlur={() => touch("githubRepo")}
                 placeholder="mirantic/client-site"
               />
             </FormRow>
@@ -247,10 +286,11 @@ export default function AdminSites() {
                   onChange={(e) => set("githubBranch", e.target.value)}
                 />
               </FormRow>
-              <FormRow label="Content path">
+              <FormRow label="Content path" error={touched.contentPath ? problems.contentPath : undefined}>
                 <Input
                   value={form.contentPath}
                   onChange={(e) => set("contentPath", e.target.value)}
+                  onBlur={() => touch("contentPath")}
                 />
               </FormRow>
             </div>
@@ -271,7 +311,12 @@ export default function AdminSites() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+            {!valid && (
+              <p className="mr-auto text-sm text-muted-foreground">
+                {problems.name ?? problems.url ?? problems.githubRepo ?? problems.contentPath}
+              </p>
+            )}
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
@@ -289,10 +334,14 @@ export default function AdminSites() {
 function FormRow({
   label,
   hint,
+  error,
+  note,
   children,
 }: {
   label: string;
   hint?: string;
+  error?: string;
+  note?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -302,6 +351,11 @@ function FormRow({
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </div>
       {children}
+      {error ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : (
+        note && <p className="text-xs text-muted-foreground">{note}</p>
+      )}
     </div>
   );
 }
@@ -310,4 +364,36 @@ function lastPublished(at: string | null): string {
   if (!at) return "Never published";
   const d = new Date(at);
   return `Last published ${d.toLocaleDateString()}`;
+}
+
+/**
+ * Accept either `owner/repo` or a repository URL — people paste the address bar
+ * far more often than they type the short form. Returns null if it is neither.
+ */
+function normalizeRepo(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  // Tolerates a trailing path, so a URL copied while browsing a branch
+  // (…/owner/repo/tree/main) still resolves to owner/repo.
+  const fromUrl = raw.match(/github\.com[/:]([^/\s]+)\/([^/\s?#]+?)(?:\.git)?(?:[/?#].*)?$/i);
+  const [owner, repo] = fromUrl
+    ? [fromUrl[1], fromUrl[2]]
+    : raw.replace(/\.git$/, "").replace(/\/$/, "").split("/");
+  if (!owner || !repo || owner.includes("/") || repo.includes("/")) return null;
+  if (/\s/.test(owner) || /\s/.test(repo)) return null;
+  return `${owner}/${repo}`;
+}
+
+/** Accept a bare domain and assume https, which is what people type. */
+function normalizeUrl(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const parsed = new URL(withScheme);
+    if (!parsed.hostname.includes(".")) return null;
+    return parsed.origin + (parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, ""));
+  } catch {
+    return null;
+  }
 }
