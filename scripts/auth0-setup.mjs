@@ -104,9 +104,26 @@ await step("disable public sign-up", async () => {
   const conns = await api("GET", `/connections?name=${encodeURIComponent(CONNECTION)}`);
   const conn = conns?.[0];
   if (!conn) throw new Error(`connection ${CONNECTION} not found`);
-  await api("PATCH", `/connections/${conn.id}`, {
+
+  // PATCHing `options` REPLACES the whole object, so it must be merged into what
+  // is already there. Auth0 omits `options` entirely from the response unless the
+  // token carries read:connections_options — writing then would silently drop
+  // every other option on the connection (password policy, brute-force settings).
+  // Refuse rather than guess.
+  if (!conn.options || typeof conn.options !== "object") {
+    throw new Error(
+      "cannot read the connection's current options — grant read:connections_options. " +
+      "Refusing to write, because PATCH replaces options wholesale and would discard the rest."
+    );
+  }
+  if (conn.options.disable_signup === true) return; // already set
+
+  const updated = await api("PATCH", `/connections/${conn.id}`, {
     options: { ...conn.options, disable_signup: true },
   });
+  if (updated?.options && updated.options.disable_signup !== true) {
+    throw new Error("Auth0 accepted the request but disable_signup did not stick");
+  }
 });
 
 // 2. Logo and primary colours (the classic branding surface).
