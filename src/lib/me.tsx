@@ -7,12 +7,15 @@ interface MeContextValue {
   me: Me | null;
   loading: boolean;
   error: string | null;
+  /** Replace the cached profile, e.g. after the user renames themselves. */
+  setMe: (me: Me) => void;
 }
 
 const MeContext = createContext<MeContextValue>({
   me: null,
   loading: true,
   error: null,
+  setMe: () => {},
 });
 
 /**
@@ -52,7 +55,7 @@ export function MeProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, authLoading]);
 
   return (
-    <MeContext.Provider value={{ me, loading, error }}>{children}</MeContext.Provider>
+    <MeContext.Provider value={{ me, loading, error, setMe }}>{children}</MeContext.Provider>
   );
 }
 

@@ -10,6 +10,9 @@
     --card: 0 0% 100%;
     --card-foreground: 222 20% 18%;
 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 20% 18%;
+
     /* Muted slate blue accent — #4A6FA5 */
     --primary: 216 38% 47%;
     --primary-foreground: 0 0% 100%;
@@ -31,6 +34,15 @@
     --ring: 216 38% 47%;
 
     --radius: 0.5rem;
+
+    /* Sidebar — the same palette as the Auth0 login page, so signing in and
+       arriving in the app feel like one product.
+       #0E1626 canvas, #16233A raised, #31456B lines, #E6EAF2 text. */
+    --sidebar: 220 46% 10%;
+    --sidebar-raised: 218 45% 16%;
+    --sidebar-border: 219 37% 31%;
+    --sidebar-foreground: 220 32% 93%;
+    --sidebar-muted: 219 20% 65%;
   }
 }
 

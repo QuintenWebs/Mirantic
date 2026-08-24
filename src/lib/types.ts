@@ -7,6 +7,8 @@ export interface Me {
   role: Role;
   /** Sites this account is assigned to as a client. */
   assignedSites: number;
+  /** False for social logins, which have no Mirantic password. */
+  hasPassword: boolean;
 }
 
 export interface InviteResult {

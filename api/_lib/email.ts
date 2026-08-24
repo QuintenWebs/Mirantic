@@ -115,3 +115,45 @@ export async function sendInviteEmail(to: string, name: string, inviteUrl: strin
   const { subject, html, text } = inviteEmail(name, inviteUrl);
   return send(to, subject, html, text);
 }
+
+/** Link to choose a new password, requested by the user from Settings. */
+export async function sendPasswordResetEmail(
+  to: string,
+  name: string,
+  url: string
+): Promise<SendResult> {
+  const greeting = name?.trim() ? `Hi ${escapeHtml(name.trim())},` : "Hi,";
+  const html = `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1f2933;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6f8;padding:32px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e7eb;border-radius:12px;padding:32px;">
+          <tr><td style="padding-bottom:24px;">
+            <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#4A6FA5;color:#ffffff;border-radius:6px;font-weight:700;font-size:14px;">M</span>
+            <span style="font-size:15px;font-weight:600;margin-left:8px;">Mirantic</span>
+          </td></tr>
+          <tr><td style="font-size:20px;font-weight:600;padding-bottom:12px;">Choose a new password</td></tr>
+          <tr><td style="font-size:15px;line-height:1.6;color:#52606d;padding-bottom:24px;">
+            ${greeting}<br /><br />
+            You asked to change your Mirantic password. The link below is valid for a
+            limited time and can only be used once.
+          </td></tr>
+          <tr><td style="padding-bottom:24px;">
+            <a href="${url}" style="display:inline-block;background:#4A6FA5;color:#ffffff;text-decoration:none;font-size:15px;font-weight:500;padding:12px 24px;border-radius:8px;">Set a new password</a>
+          </td></tr>
+          <tr><td style="font-size:13px;line-height:1.6;color:#7b8794;border-top:1px solid #e4e7eb;padding-top:20px;">
+            If this wasn't you, ignore this email — your current password stays active.
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+  const text = `${name?.trim() ? `Hi ${name.trim()},` : "Hi,"}
+
+You asked to change your Mirantic password. Set a new one here: ${url}
+
+If this wasn't you, ignore this email — your current password stays active.`;
+  return send(to, "Change your Mirantic password", html, text);
+}
