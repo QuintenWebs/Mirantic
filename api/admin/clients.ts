@@ -3,7 +3,12 @@ import { eq } from "drizzle-orm";
 import { requireAdmin, HttpError } from "../_lib/auth.js";
 import { withErrors, methodNotAllowed, readBody } from "../_lib/http.js";
 import { db, schema } from "../_lib/db.js";
-import { createClientUser, deleteAuth0User } from "../_lib/auth0-management.js";
+import {
+  createClientUser,
+  createInviteTicket,
+  deleteAuth0User,
+} from "../_lib/auth0-management.js";
+import { sendInviteEmail } from "../_lib/email.js";
 
 interface ClientWithSites {
   id: string;
@@ -66,7 +71,21 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  // ── POST /api/admin/clients → create Auth0 user + DB row + invite link ──
+  // ── POST /api/admin/clients?id=...&action=resend → new invite link + email ──
+  if (req.method === "POST" && req.query.action === "resend") {
+    const id = req.query.id as string;
+    if (!id) throw new HttpError(400, "id is required");
+    const user = await db.query.users.findFirst({ where: eq(schema.users.id, id) });
+    if (!user) throw new HttpError(404, "Client not found");
+    if (!user.auth0Id) throw new HttpError(400, "This client has no Auth0 account to invite");
+
+    const inviteUrl = await createInviteTicket(user.auth0Id);
+    const mail = await sendInviteEmail(user.email, user.name, inviteUrl);
+    res.status(200).json({ inviteUrl, emailSent: mail.sent, emailError: mail.reason });
+    return;
+  }
+
+  // ── POST /api/admin/clients → create Auth0 user + DB row + emailed invite ──
   if (req.method === "POST") {
     const { name, email } = readBody<{ name: string; email: string }>(req);
     if (!email) throw new HttpError(400, "email is required");
@@ -92,7 +111,16 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
       })
       .returning();
 
-    res.status(201).json({ client: created, inviteUrl });
+    // Email failures must not lose the invitation: the account exists either
+    // way, so report the outcome and still hand back the link to send by hand.
+    const mail = await sendInviteEmail(normalizedEmail, created.name, inviteUrl);
+
+    res.status(201).json({
+      client: created,
+      inviteUrl,
+      emailSent: mail.sent,
+      emailError: mail.reason,
+    });
     return;
   }
 

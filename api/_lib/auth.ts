@@ -49,53 +49,73 @@ async function verifyToken(req: VercelRequest): Promise<Auth0Claims> {
 }
 
 /**
- * Verify the Auth0 token and resolve the matching DB user, creating the row on
- * first sight (just-in-time provisioning). Email/name come from the token's
- * standard OIDC claims (require `openid profile email` scopes on the SPA).
+ * Message shown to anyone who authenticates successfully at Auth0 but has no
+ * invitation here. Deliberately vague about whether the address is known.
+ */
+const NOT_INVITED =
+  "This account has not been invited to Mirantic. Ask your administrator for an invite.";
+
+/**
+ * Verify the Auth0 token and resolve the matching DB user.
+ *
+ * Access is INVITE ONLY: a row must already exist, created by an admin through
+ * /api/admin/clients. Authenticating at Auth0 is not by itself enough to get in,
+ * so a stray Auth0 signup (or any Google account) lands on a 403 rather than
+ * silently becoming a user.
  */
 export async function requireUser(req: VercelRequest): Promise<User> {
   const claims = await verifyToken(req);
   const auth0Id = claims.sub;
 
-  // Standard claims may live under a namespaced key depending on Auth0 setup;
-  // fall back gracefully.
-  const email =
-    (claims.email as string) ||
-    (claims["https://app.mirantic.com/email"] as string) ||
-    "";
-  const name =
-    (claims.name as string) ||
-    (claims["https://app.mirantic.com/name"] as string) ||
-    "";
-
+  // Already linked — the normal path for every returning user.
   const existing = await db.query.users.findFirst({
     where: eq(schema.users.auth0Id, auth0Id),
   });
   if (existing) return existing;
 
-  if (!email) {
-    throw new HttpError(403, "No email in token; cannot provision user");
-  }
+  // Standard claims may live under a namespaced key depending on Auth0 setup;
+  // fall back gracefully.
+  const email = (
+    (claims.email as string) ||
+    (claims["https://app.mirantic.com/email"] as string) ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+  const name =
+    (claims.name as string) ||
+    (claims["https://app.mirantic.com/name"] as string) ||
+    "";
 
-  // If a row was pre-created by the admin (invite flow) with this email but no
-  // auth0Id yet, link it. Otherwise insert a fresh client user.
-  const byEmail = await db.query.users.findFirst({
+  if (!email) throw new HttpError(403, NOT_INVITED);
+
+  const invited = await db.query.users.findFirst({
     where: eq(schema.users.email, email),
   });
-  if (byEmail && !byEmail.auth0Id) {
-    const [linked] = await db
-      .update(schema.users)
-      .set({ auth0Id, name: name || byEmail.name })
-      .where(eq(schema.users.id, byEmail.id))
-      .returning();
-    return linked;
+  if (!invited) throw new HttpError(403, NOT_INVITED);
+
+  // The invitation is already bound to a different Auth0 identity. Refusing
+  // beats silently re-binding: it would let anyone who can obtain a token for
+  // this address take over the existing account.
+  if (invited.auth0Id && invited.auth0Id !== auth0Id) {
+    throw new HttpError(
+      403,
+      "This email is already linked to a different sign-in method. Use the one you signed up with."
+    );
   }
 
-  const [created] = await db
-    .insert(schema.users)
-    .values({ auth0Id, email, name, role: "client" })
+  // First sign-in against an invitation. Only trust an email the identity
+  // provider has actually verified, so an unverified signup cannot claim it.
+  if (claims.email_verified !== true) {
+    throw new HttpError(403, "Verify your email address, then sign in again.");
+  }
+
+  const [linked] = await db
+    .update(schema.users)
+    .set({ auth0Id, name: name || invited.name })
+    .where(eq(schema.users.id, invited.id))
     .returning();
-  return created;
+  return linked;
 }
 
 export async function requireAdmin(req: VercelRequest): Promise<User> {

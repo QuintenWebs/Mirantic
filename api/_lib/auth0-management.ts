@@ -79,33 +79,39 @@ export async function createClientUser(
     name: string;
   };
 
-  // Create a password-change ticket (the invite link).
-  const ticketRes = await fetch(
-    `https://${AUTH0_DOMAIN}/api/v2/tickets/password-change`,
-    {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        user_id: created.user_id,
-        result_url: `${APP_URL}/login`,
-        mark_email_as_verified: true,
-      }),
-    }
-  );
-  if (!ticketRes.ok) {
-    const detail = await safeJson(ticketRes);
-    throw new HttpError(502, `Auth0 invite ticket failed: ${detail}`);
-  }
-  const ticket = (await ticketRes.json()) as { ticket: string };
-
   return {
     user: {
       auth0Id: created.user_id,
       email: created.email,
       name: created.name,
     },
-    inviteUrl: ticket.ticket,
+    inviteUrl: await createInviteTicket(created.user_id),
   };
+}
+
+/**
+ * Mint a password-change ticket for an existing Auth0 user — the invite link.
+ * Used both for a fresh invitation and for re-sending one that expired.
+ */
+export async function createInviteTicket(auth0Id: string): Promise<string> {
+  const mgmtToken = await getMgmtToken();
+  const res = await fetch(`https://${AUTH0_DOMAIN}/api/v2/tickets/password-change`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${mgmtToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      user_id: auth0Id,
+      result_url: `${APP_URL}/login`,
+      mark_email_as_verified: true,
+    }),
+  });
+  if (!res.ok) {
+    throw new HttpError(502, `Auth0 invite ticket failed: ${await safeJson(res)}`);
+  }
+  const ticket = (await res.json()) as { ticket: string };
+  return ticket.ticket;
 }
 
 export async function deleteAuth0User(auth0Id: string): Promise<void> {

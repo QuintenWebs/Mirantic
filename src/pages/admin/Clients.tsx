@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Trash2, Loader2, Copy, Check, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Loader2, Copy, Check, ChevronRight, Mail, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useApi } from "@/lib/api";
 import { useFetch } from "@/lib/useFetch";
-import type { Client } from "@/lib/types";
+import type { Client, InviteResult } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,18 +32,16 @@ export default function Clients() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [invite, setInvite] = useState<Omit<InviteResult, "client"> | null>(null);
   const [copied, setCopied] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   async function handleAdd() {
     setSubmitting(true);
     try {
-      const res = await api.post<{ inviteUrl: string }>("/api/admin/clients", {
-        name,
-        email,
-      });
-      setInviteUrl(res.inviteUrl);
+      const res = await api.post<InviteResult>("/api/admin/clients", { name, email });
+      setInvite(res);
       setName("");
       setEmail("");
       refetch();
@@ -51,6 +49,24 @@ export default function Clients() {
       toast.error(err instanceof Error ? err.message : "Could not create client");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleResend(client: Client) {
+    setResendingId(client.id);
+    try {
+      const res = await api.post<InviteResult>(
+        `/api/admin/clients?id=${client.id}&action=resend`
+      );
+      if (res.emailSent) {
+        toast.success(`Invite re-sent to ${client.email}`);
+      } else {
+        toast.error(`Could not email the invite: ${res.emailError ?? "unknown error"}`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not re-send the invite");
+    } finally {
+      setResendingId(null);
     }
   }
 
@@ -70,7 +86,7 @@ export default function Clients() {
 
   function closeAdd() {
     setAddOpen(false);
-    setInviteUrl(null);
+    setInvite(null);
     setName("");
     setEmail("");
   }
@@ -129,6 +145,20 @@ export default function Clients() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="text-muted-foreground"
+                  disabled={resendingId === client.id}
+                  onClick={() => handleResend(client)}
+                  title="Re-send invite email"
+                >
+                  {resendingId === client.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="text-muted-foreground hover:text-destructive"
                   disabled={deletingId === client.id}
                   onClick={() => handleDelete(client)}
@@ -156,20 +186,34 @@ export default function Clients() {
           <DialogHeader>
             <DialogTitle>Add client</DialogTitle>
             <DialogDescription>
-              Creates an Auth0 login. Share the invite link so they can set a password.
+              Creates their login and emails an invite. Only invited people can sign in.
             </DialogDescription>
           </DialogHeader>
 
-          {inviteUrl ? (
+          {invite ? (
             <div className="space-y-3">
-              <p className="text-sm">Client created. Send them this invite link:</p>
+              {invite.emailSent ? (
+                <p className="text-sm">
+                  Client created — the invite is on its way to their inbox. The link below is
+                  the same one, in case you need to send it another way.
+                </p>
+              ) : (
+                <div className="flex gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-medium">The account was created, but the email failed.</p>
+                    <p className="mt-0.5 opacity-90">{invite.emailError}</p>
+                    <p className="mt-1.5">Send them this link yourself:</p>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-2">
-                <Input readOnly value={inviteUrl} className="font-mono text-xs" />
+                <Input readOnly value={invite.inviteUrl} className="font-mono text-xs" />
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => {
-                    navigator.clipboard.writeText(inviteUrl);
+                    navigator.clipboard.writeText(invite.inviteUrl);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 1500);
                   }}
@@ -197,7 +241,7 @@ export default function Clients() {
           )}
 
           <DialogFooter>
-            {inviteUrl ? (
+            {invite ? (
               <Button onClick={closeAdd}>Done</Button>
             ) : (
               <>

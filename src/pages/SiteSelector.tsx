@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState, EmptyState } from "@/components/states";
 import { useMe } from "@/lib/me";
+import { useViewMode } from "@/lib/view-mode";
 
 export default function SiteSelector() {
   const { me } = useMe();
+  const { mode } = useViewMode();
+  // In client view an admin sees only their own assignments, not every site.
   const { data: sites, loading, error, refetch } = useFetch<Site[]>(
-    (api) => api.get<Site[]>("/api/sites"),
-    []
+    (api) => api.get<Site[]>(mode === "client" ? "/api/sites?as=client" : "/api/sites"),
+    [mode]
   );
 
   return (
@@ -43,9 +46,11 @@ export default function SiteSelector() {
         <EmptyState
           title="No sites yet"
           description={
-            me?.role === "admin"
+            me?.role === "admin" && mode === "admin"
               ? "Add a site from the Sites admin page to get started."
-              : "No sites have been assigned to you yet. Contact your administrator."
+              : me?.role === "admin"
+                ? "You aren't assigned to any site as a client. Assign yourself one from Clients to see this view populated."
+                : "No sites have been assigned to you yet. Contact your administrator."
           }
         />
       )}

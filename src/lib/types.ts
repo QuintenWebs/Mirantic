@@ -5,6 +5,15 @@ export interface Me {
   email: string;
   name: string;
   role: Role;
+  /** Sites this account is assigned to as a client. */
+  assignedSites: number;
+}
+
+export interface InviteResult {
+  client: Client;
+  inviteUrl: string;
+  emailSent: boolean;
+  emailError?: string;
 }
 
 export interface Site {

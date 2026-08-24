@@ -4,6 +4,7 @@ import { Auth0Provider } from "@auth0/auth0-react";
 import { BrowserRouter, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { MeProvider } from "@/lib/me";
+import { ViewModeProvider } from "@/lib/view-mode";
 import { authConfig } from "@/lib/auth-config";
 import App from "./App";
 import "./index.css";
@@ -35,8 +36,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <Auth0ProviderWithNavigate>
         <MeProvider>
-          <App />
-          <Toaster position="bottom-right" />
+          <ViewModeProvider>
+            <App />
+            <Toaster position="bottom-right" />
+          </ViewModeProvider>
         </MeProvider>
       </Auth0ProviderWithNavigate>
     </BrowserRouter>
