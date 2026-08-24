@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { and, eq } from "drizzle-orm";
-import { requireUser } from "../_lib/auth";
-import { withErrors, methodNotAllowed } from "../_lib/http";
-import { requireSiteAccess } from "../_lib/access";
-import { fetchContentFile } from "../_lib/github";
-import { db, schema } from "../_lib/db";
+import { requireUser } from "../_lib/auth.js";
+import { withErrors, methodNotAllowed } from "../_lib/http.js";
+import { requireSiteAccess } from "../_lib/access.js";
+import { fetchContentFile } from "../_lib/github.js";
+import { db, schema } from "../_lib/db.js";
 
 // GET /api/sites/:id → site metadata + the current user's permissions +
 // all unpublished pending changes + (best-effort) the current content.json.

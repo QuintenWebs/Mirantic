@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { requireUser } from "./_lib/auth";
-import { withErrors, methodNotAllowed } from "./_lib/http";
+import { requireUser } from "./_lib/auth.js";
+import { withErrors, methodNotAllowed } from "./_lib/http.js";
 
 // GET /api/me → the current user's profile and role.
 export default withErrors(async (req: VercelRequest, res: VercelResponse) => {

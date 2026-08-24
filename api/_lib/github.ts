@@ -1,6 +1,6 @@
 import { Octokit } from "octokit";
-import { HttpError } from "./auth";
-import type { Site } from "./schema";
+import { HttpError } from "./auth.js";
+import type { Site } from "./schema.js";
 
 const token = process.env.GITHUB_TOKEN;
 

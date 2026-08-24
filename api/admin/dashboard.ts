@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { eq, sql } from "drizzle-orm";
-import { requireAdmin } from "../_lib/auth";
-import { withErrors, methodNotAllowed } from "../_lib/http";
-import { db, schema } from "../_lib/db";
+import { requireAdmin } from "../_lib/auth.js";
+import { withErrors, methodNotAllowed } from "../_lib/http.js";
+import { db, schema } from "../_lib/db.js";
 
 // GET /api/admin/dashboard → high-level counts for the admin overview.
 export default withErrors(async (req: VercelRequest, res: VercelResponse) => {

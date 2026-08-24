@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { eq } from "drizzle-orm";
-import { requireUser } from "../_lib/auth";
-import { withErrors, methodNotAllowed } from "../_lib/http";
-import { db, schema } from "../_lib/db";
+import { requireUser } from "../_lib/auth.js";
+import { withErrors, methodNotAllowed } from "../_lib/http.js";
+import { db, schema } from "../_lib/db.js";
 
 // GET /api/sites → sites the current user can access.
 // Admin sees all sites; clients see only assigned sites.

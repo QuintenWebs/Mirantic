@@ -11,10 +11,10 @@ const checks: Array<[string, () => Promise<unknown>]> = [
   ["drizzle-orm", () => import("drizzle-orm")],
   ["@neondatabase/serverless", () => import("@neondatabase/serverless")],
   ["drizzle-orm/neon-http", () => import("drizzle-orm/neon-http")],
-  ["./_lib/schema", () => import("./_lib/schema")],
-  ["./_lib/db", () => import("./_lib/db")],
-  ["./_lib/auth", () => import("./_lib/auth")],
-  ["./_lib/http", () => import("./_lib/http")],
+  ["./_lib/schema.js", () => import("./_lib/schema.js")],
+  ["./_lib/db.js", () => import("./_lib/db.js")],
+  ["./_lib/auth.js", () => import("./_lib/auth.js")],
+  ["./_lib/http.js", () => import("./_lib/http.js")],
 ];
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {

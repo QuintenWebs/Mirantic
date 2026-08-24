@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { HttpError } from "./auth";
+import { HttpError } from "./auth.js";
 
 type Handler = (req: VercelRequest, res: VercelResponse) => Promise<void> | void;
 

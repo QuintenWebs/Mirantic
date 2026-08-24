@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { and, eq } from "drizzle-orm";
-import { requireAdmin, HttpError } from "../_lib/auth";
-import { withErrors, methodNotAllowed, readBody } from "../_lib/http";
-import { db, schema } from "../_lib/db";
+import { requireAdmin, HttpError } from "../_lib/auth.js";
+import { withErrors, methodNotAllowed, readBody } from "../_lib/http.js";
+import { db, schema } from "../_lib/db.js";
 
 interface AssignBody {
   userId: string;

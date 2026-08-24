@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
-import { db, schema } from "./db";
-import { HttpError } from "./auth";
-import type { Site, User } from "./schema";
+import { db, schema } from "./db.js";
+import { HttpError } from "./auth.js";
+import type { Site, User } from "./schema.js";
 
 export interface SiteAccess {
   site: Site;

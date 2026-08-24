@@ -1,8 +1,8 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import type { VercelRequest } from "@vercel/node";
 import { eq } from "drizzle-orm";
-import { db, schema } from "./db";
-import type { User } from "./schema";
+import { db, schema } from "./db.js";
+import type { User } from "./schema.js";
 
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE;

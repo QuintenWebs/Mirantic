@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { put } from "@vercel/blob";
-import { requireUser, HttpError } from "./_lib/auth";
-import { withErrors, methodNotAllowed } from "./_lib/http";
-import { requireSiteAccess } from "./_lib/access";
+import { requireUser, HttpError } from "./_lib/auth.js";
+import { withErrors, methodNotAllowed } from "./_lib/http.js";
+import { requireSiteAccess } from "./_lib/access.js";
 
 export const config = {
   // Read the raw image bytes ourselves rather than letting Vercel parse them.

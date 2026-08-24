@@ -1,4 +1,4 @@
-import { HttpError } from "./auth";
+import { HttpError } from "./auth.js";
 
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
 const M2M_CLIENT_ID = process.env.AUTH0_M2M_CLIENT_ID;

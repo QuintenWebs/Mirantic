@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { and, eq, inArray } from "drizzle-orm";
-import { requireUser, HttpError } from "./_lib/auth";
-import { withErrors, methodNotAllowed, readBody } from "./_lib/http";
-import { requireSiteAccess } from "./_lib/access";
-import { db, schema } from "./_lib/db";
-import { fetchContentFile, commitContentFile, triggerDeployHook } from "./_lib/github";
-import { applyChanges } from "./_lib/content";
+import { requireUser, HttpError } from "./_lib/auth.js";
+import { withErrors, methodNotAllowed, readBody } from "./_lib/http.js";
+import { requireSiteAccess } from "./_lib/access.js";
+import { db, schema } from "./_lib/db.js";
+import { fetchContentFile, commitContentFile, triggerDeployHook } from "./_lib/github.js";
+import { applyChanges } from "./_lib/content.js";
 
 // POST /api/publish { siteId } → commit all pending changes to content.json,
 // trigger redeploy, and mark the changes published.

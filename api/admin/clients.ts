@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { eq } from "drizzle-orm";
-import { requireAdmin, HttpError } from "../_lib/auth";
-import { withErrors, methodNotAllowed, readBody } from "../_lib/http";
-import { db, schema } from "../_lib/db";
-import { createClientUser, deleteAuth0User } from "../_lib/auth0-management";
+import { requireAdmin, HttpError } from "../_lib/auth.js";
+import { withErrors, methodNotAllowed, readBody } from "../_lib/http.js";
+import { db, schema } from "../_lib/db.js";
+import { createClientUser, deleteAuth0User } from "../_lib/auth0-management.js";
 
 interface ClientWithSites {
   id: string;
