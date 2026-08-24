@@ -3,11 +3,36 @@ import { eq } from "drizzle-orm";
 import { requireUser, HttpError } from "./_lib/auth.js";
 import { withErrors, methodNotAllowed, readBody } from "./_lib/http.js";
 import { db, schema } from "./_lib/db.js";
+import { createInviteTicket } from "./_lib/auth0-management.js";
+import { sendPasswordResetEmail } from "./_lib/email.js";
 
-// GET /api/me    → the current user's profile and role.
-// PATCH /api/me  → update the parts of it a user may change themselves.
+// Everything the signed-in user can do to their own account:
+//   GET   /api/me                   → profile and role
+//   PATCH /api/me                   → update what they may change themselves
+//   POST  /api/me?action=password   → email a link to set a new password
+//
+// The password action lives here rather than under its own route because Vercel's
+// Hobby plan caps a deployment at 12 Serverless Functions, and each file is one.
 export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
   const user = await requireUser(req);
+
+  if (req.method === "POST" && req.query.action === "password") {
+    // The app never sees a password: Auth0 issues a change ticket and the user
+    // sets it on Auth0's own page, so there is no credential to mishandle here.
+    if (!user.auth0Id?.startsWith("auth0|")) {
+      throw new HttpError(
+        400,
+        "This account signs in with Google, so it has no Mirantic password to change."
+      );
+    }
+    const url = await createInviteTicket(user.auth0Id);
+    const mail = await sendPasswordResetEmail(user.email, user.name, url);
+    if (!mail.sent) {
+      throw new HttpError(502, `Could not send the email: ${mail.reason ?? "unknown error"}`);
+    }
+    res.status(200).json({ sent: true, email: user.email });
+    return;
+  }
 
   if (req.method === "PATCH") {
     const { name } = readBody<{ name?: string }>(req);
@@ -27,7 +52,7 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  if (req.method !== "GET") return methodNotAllowed(res, ["GET", "PATCH"]);
+  if (req.method !== "GET") return methodNotAllowed(res, ["GET", "PATCH", "POST"]);
   res.status(200).json(await withCounts(user));
 });
 

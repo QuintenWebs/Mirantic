@@ -53,7 +53,7 @@ export function SettingsDialog({
   async function changePassword() {
     setSending(true);
     try {
-      await api.post<{ sent: boolean }>("/api/account/password");
+      await api.post<{ sent: boolean }>("/api/me?action=password");
       toast.success(`Check ${me?.email} for a link to set a new password`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not send the email");
