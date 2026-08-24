@@ -6,7 +6,7 @@
  *   node scripts/auth0-setup.mjs [--dry-run]
  *
  * Reads AUTH0_DOMAIN and the M2M credentials from .env.local. The M2M app needs:
- *   read:connections update:connections
+ *   read:connections update:connections update:connections_options
  *   read:branding update:branding
  *   read:branding_themes create:branding_themes update:branding_themes
  *   read:prompts update:prompts
@@ -30,7 +30,10 @@ const BRAND = {
   headerText: "#FFFFFF",
   inputBackground: "#1E2E4A",
   inputBorder: "#31456B",
-  logoUrl: "https://mirantic.com/brand/logo-primary.png",
+  // Reversed (white) wordmark, cropped to its ink box — logo-primary is dark
+  // artwork and logo-reversed.png carries ~90% empty canvas that Auth0 would
+  // scale the wordmark away inside.
+  logoUrl: "https://mirantic.com/brand/logo-reversed-trimmed.png",
   fontUrl: "https://fonts.gstatic.com/s/hankengrotesk/v8/ieVq2YZDLWuGJpnzaiwFXS9tYvBRzyFLlZg_f-NGoZE.woff2",
 };
 
@@ -162,7 +165,7 @@ await step("branding theme", async () => {
     },
     widget: {
       header_text_alignment: "center",
-      logo_height: 42,
+      logo_height: 32,
       logo_position: "center",
       logo_url: BRAND.logoUrl,
       social_buttons_layout: "bottom",
