@@ -76,11 +76,26 @@ function Integrations({ data }: { data: DashboardStats }) {
   async function sendTest() {
     setSending(true);
     try {
-      const r = await api.post<{ sent: boolean; reason?: string; to: string }>(
-        "/api/admin/dashboard?action=test-email"
-      );
-      if (r.sent) toast.success(`Test email sent to ${r.to}`);
-      else toast.error(r.reason ?? "The email could not be sent");
+      const r = await api.post<{
+        sent: boolean;
+        reason?: string;
+        to: string;
+        key?: { length?: number; startsWithRe?: boolean; hasWhitespace?: boolean; looksTruncated?: boolean };
+      }>("/api/admin/dashboard?action=test-email");
+      if (r.sent) {
+        toast.success(`Test email sent to ${r.to}`);
+      } else {
+        const k = r.key;
+        const hint =
+          k?.length !== undefined && (k.length < 30 || k.looksTruncated)
+            ? ` — the key in this deployment is ${k.length} characters${k.looksTruncated ? " and ends in an ellipsis" : ""}, so it is the masked value, not the real one.`
+            : k?.hasWhitespace
+              ? " — the key has stray whitespace around it."
+              : k?.startsWithRe === false
+                ? " — the key does not start with re_."
+                : "";
+        toast.error((r.reason ?? "The email could not be sent") + hint, { duration: 12000 });
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "The email could not be sent");
     } finally {

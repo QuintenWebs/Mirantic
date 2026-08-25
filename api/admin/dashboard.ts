@@ -5,6 +5,23 @@ import { withErrors, methodNotAllowed } from "../_lib/http.js";
 import { db, schema } from "../_lib/db.js";
 import { sendTestEmail } from "../_lib/email.js";
 
+/**
+ * Enough to diagnose a rejected key without revealing it: a real Resend key is
+ * "re_" plus about 32 characters. A short one is the masked value copied out of
+ * the dashboard; surrounding whitespace comes from a sloppy paste.
+ */
+function describeKey(key: string | undefined) {
+  if (!key) return { present: false };
+  return {
+    present: true,
+    length: key.length,
+    startsWithRe: key.startsWith("re_"),
+    hasWhitespace: key !== key.trim(),
+    looksTruncated: /[.\u2026]$/.test(key.trim()),
+    expected: "re_ + ~32 chars (about 35 total)",
+  };
+}
+
 // GET  /api/admin/dashboard                    → counts + integration status
 // POST /api/admin/dashboard?action=test-email  → send the admin a test message
 //
@@ -18,7 +35,15 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     const result = await sendTestEmail(admin.email);
     // Reported, not thrown: the reason Resend gives back is the whole point of
     // the test, and a 500 would bury it.
-    res.status(200).json({ sent: result.sent, reason: result.reason, to: admin.email });
+    res.status(200).json({
+      sent: result.sent,
+      reason: result.reason,
+      to: admin.email,
+      // On failure only, describe the SHAPE of the key — never any part of its
+      // value. "Invalid API key" cannot otherwise be told apart from a stale
+      // deployment still holding the previous one, because both are present.
+      key: result.sent ? undefined : describeKey(process.env.RESEND_API_KEY),
+    });
     return;
   }
 
