@@ -157,3 +157,31 @@ You asked to change your Mirantic password. Set a new one here: ${url}
 If this wasn't you, ignore this email — your current password stays active.`;
   return send(to, "Change your Mirantic password", html, text);
 }
+
+/** A message the admin sends to themselves to prove sending works end to end. */
+export async function sendTestEmail(to: string): Promise<SendResult> {
+  const html = `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1f2933;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6f8;padding:32px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e7eb;border-radius:12px;padding:32px;">
+          <tr><td style="padding-bottom:24px;">
+            <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#4A6FA5;color:#ffffff;border-radius:6px;font-weight:700;font-size:14px;">M</span>
+            <span style="font-size:15px;font-weight:600;margin-left:8px;">Mirantic</span>
+          </td></tr>
+          <tr><td style="font-size:20px;font-weight:600;padding-bottom:12px;">Email is working</td></tr>
+          <tr><td style="font-size:15px;line-height:1.6;color:#52606d;">
+            If you're reading this, Mirantic can send mail: the API key is valid, the
+            sending domain is verified, and invitations will reach your clients.
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+  const text =
+    "If you're reading this, Mirantic can send mail: the API key is valid, the " +
+    "sending domain is verified, and invitations will reach your clients.";
+  return send(to, "Mirantic test email", html, text);
+}

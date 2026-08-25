@@ -90,6 +90,12 @@ export interface DashboardStats {
   clients: number;
   sites: number;
   sitesWithPendingChanges: number;
+  integrations: {
+    email: boolean;
+    emailFrom: string;
+    github: boolean;
+    imageUploads: boolean;
+  };
 }
 
 // Blog post shape stored in content.json under blog.posts[].
