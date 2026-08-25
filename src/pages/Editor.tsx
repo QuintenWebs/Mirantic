@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { X, Rocket, AlertTriangle, MousePointerClick, Compass } from "lucide-react";
+import { X, Rocket, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useApi } from "@/lib/api";
 import { useFetch } from "@/lib/useFetch";
@@ -11,6 +11,8 @@ import type { PendingChange, SiteWithChanges, BlogPost } from "@/lib/types";
 import { CenteredSpinner, ErrorState } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FieldEditor } from "@/components/editor/FieldEditor";
 import { ChangesList } from "@/components/editor/ChangesList";
@@ -39,7 +41,10 @@ export default function Editor() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [editMode, setEditMode] = useState(true);
   const [publishing, setPublishing] = useState(false);
-  const [bridgeReady, setBridgeReady] = useState(false);
+  // Incremented on every bridge handshake. A boolean would latch on the first
+  // page and leave every page navigated to afterwards without init — and so
+  // without click listeners or pending-change previews.
+  const [connection, setConnection] = useState(0);
   const [bridgeWarning, setBridgeWarning] = useState(false);
   const readyTimeout = useRef<number | null>(null);
 
@@ -53,7 +58,7 @@ export default function Editor() {
   }, [data]);
 
   const onReady = useCallback(() => {
-    setBridgeReady(true);
+    setConnection((n) => n + 1);
     setBridgeWarning(false);
     if (readyTimeout.current) window.clearTimeout(readyTimeout.current);
   }, []);
@@ -71,7 +76,7 @@ export default function Editor() {
 
   // On (re)connect, push all pending changes into the iframe.
   useEffect(() => {
-    if (!bridgeReady) return;
+    if (connection === 0) return;
     const fieldChanges = changes
       .filter((c) => c.changeType === "field")
       .map((c) => ({
@@ -85,22 +90,25 @@ export default function Editor() {
     bridge.sendInit(fieldChanges, newPosts, editMode);
     // Only re-init on (re)connection, not on every keystroke.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bridgeReady]);
+  }, [connection]);
 
   // Pushing the mode separately keeps the toggle instant rather than waiting for
   // a reconnect.
   useEffect(() => {
-    if (!bridgeReady) return;
+    if (connection === 0) return;
     bridge.setEditMode(editMode);
     if (!editMode) setSelected(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editMode, bridgeReady]);
+  }, [editMode, connection]);
 
   // Warn if the bridge never connects (script missing / wrong origin).
   function handleIframeLoad() {
     if (readyTimeout.current) window.clearTimeout(readyTimeout.current);
     readyTimeout.current = window.setTimeout(() => {
-      if (!bridgeReady) setBridgeWarning(true);
+      setConnection((n) => {
+        if (n === 0) setBridgeWarning(true);
+        return n;
+      });
     }, 4000);
   }
 
@@ -263,33 +271,27 @@ export default function Editor() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-1 border-b bg-muted/40 p-1.5">
-          {[
-            { value: true, label: "Edit", icon: MousePointerClick },
-            { value: false, label: "Browse", icon: Compass },
-          ].map(({ value, label, icon: Icon }) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => setEditMode(value)}
-              aria-pressed={editMode === value}
-              className={
-                "inline-flex flex-1 items-center justify-center gap-1.5 rounded px-2 py-1.5 text-sm font-medium transition-colors " +
-                (editMode === value
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground")
-              }
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
+        {/* One switch, not a two-way choice: editing is a mode you turn on, and
+            off is simply the site behaving normally. */}
+        <div className="flex items-start gap-3 border-b px-4 py-3">
+          <Switch
+            id="edit-mode"
+            checked={editMode}
+            onCheckedChange={setEditMode}
+            disabled={!canEdit}
+            className="mt-0.5"
+          />
+          <div className="min-w-0">
+            <Label htmlFor="edit-mode" className="text-sm font-medium">
+              Edit mode
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {editMode
+                ? "Click anything on the page to edit it."
+                : "Links work normally — browse to the page you want, then switch this on."}
+            </p>
+          </div>
         </div>
-        <p className="border-b px-4 py-2 text-xs text-muted-foreground">
-          {editMode
-            ? "Click anything on the page to edit it."
-            : "Links work normally — navigate to the page you want, then switch back to Edit."}
-        </p>
 
         {!canEdit && (
           <div className="border-b bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
