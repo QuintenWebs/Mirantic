@@ -20,6 +20,8 @@ const EMPTY_POST: BlogPost = {
 
 interface BlogPanelProps {
   content: unknown;
+  /** Why content.json could not be read, if it could not. */
+  contentError?: string | null;
   pendingChanges: PendingChange[];
   saving: boolean;
   /** Edit one field of an existing post: persists + previews live. */
@@ -30,6 +32,7 @@ interface BlogPanelProps {
 
 export function BlogPanel({
   content,
+  contentError,
   pendingChanges,
   saving,
   onEditField,
@@ -112,7 +115,16 @@ export function BlogPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {existingPosts.length === 0 && newPosts.length === 0 ? (
+        {contentError ? (
+          // Distinguish "this site has no posts" from "the posts could not be
+          // loaded" — otherwise a missing GITHUB_TOKEN looks like an empty blog.
+          <div className="p-4">
+            <EmptyState
+              title="Existing posts couldn't be loaded"
+              description={`content.json could not be read from GitHub, so posts already published aren't listed. ${contentError}`}
+            />
+          </div>
+        ) : existingPosts.length === 0 && newPosts.length === 0 ? (
           <div className="p-4">
             <EmptyState title="No posts yet" description="Add your first blog post." />
           </div>

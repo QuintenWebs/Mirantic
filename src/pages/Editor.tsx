@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FieldEditor } from "@/components/editor/FieldEditor";
 import { ChangesList } from "@/components/editor/ChangesList";
 import { BlogPanel } from "@/components/editor/BlogPanel";
@@ -37,7 +36,6 @@ export default function Editor() {
   const [changes, setChanges] = useState<PendingChange[]>([]);
   const [selected, setSelected] = useState<Selection | null>(null);
   const [savingField, setSavingField] = useState(false);
-  const [tab, setTab] = useState<"changes" | "blog">("changes");
   const [publishOpen, setPublishOpen] = useState(false);
   const [editMode, setEditMode] = useState(true);
   const [publishing, setPublishing] = useState(false);
@@ -66,7 +64,6 @@ export default function Editor() {
   const onFieldClicked = useCallback(
     (field: string, value: string, fieldType: FieldType) => {
       if (!canEdit) return;
-      setTab("changes");
       setSelected({ field, fieldType, value });
     },
     [canEdit]
@@ -335,28 +332,20 @@ export default function Editor() {
                 setSelected(null);
               }}
             />
-          ) : site.hasBlog ? (
-            <Tabs
-              value={tab}
-              onValueChange={(v) => setTab(v as "changes" | "blog")}
-              className="flex h-full flex-col"
-            >
-              <div className="px-4 pt-3">
-                <TabsList className="w-full">
-                  <TabsTrigger value="changes" className="flex-1">
-                    Changes
-                    {fieldChangeCount > 0 && (
-                      <Badge variant="secondary" className="ml-1.5 px-1.5">
-                        {fieldChangeCount}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="blog" className="flex-1">
-                    Blog
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              <TabsContent value="changes" className="mt-0 min-h-0 flex-1 overflow-y-auto">
+          ) : (
+            /* Changes first, blog beneath it. They are not alternatives — you
+               can have pending edits and be writing a post at the same time —
+               so tabs hid one behind the other for no reason. */
+            <div className="h-full space-y-4 overflow-y-auto pb-4">
+              <div>
+                <div className="flex items-center gap-2 px-4 pt-3">
+                  <p className="text-sm font-medium">Changes</p>
+                  {fieldChangeCount > 0 && (
+                    <Badge variant="secondary" className="px-1.5">
+                      {fieldChangeCount}
+                    </Badge>
+                  )}
+                </div>
                 <ChangesList
                   changes={changes}
                   onDiscard={handleDiscard}
@@ -368,32 +357,22 @@ export default function Editor() {
                     })
                   }
                 />
-              </TabsContent>
-              <TabsContent value="blog" className="mt-0 min-h-0 flex-1 overflow-y-auto">
-                <BlogPanel
-                  content={data?.content}
-                  pendingChanges={changes}
-                  saving={savingField}
-                  onEditField={(field, oldVal, newVal) =>
-                    persistField(field, oldVal, newVal, guessFieldType(field, newVal))
-                  }
-                  onAddPost={handleAddPost}
-                />
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <div className="h-full overflow-y-auto">
-              <ChangesList
-                changes={changes}
-                onDiscard={handleDiscard}
-                onSelect={(c) =>
-                  setSelected({
-                    field: c.field,
-                    fieldType: guessFieldType(c.field, c.newValue),
-                    value: typeof c.newValue === "string" ? c.newValue : "",
-                  })
-                }
-              />
+              </div>
+
+              {site.hasBlog && (
+                <div className="border-t pt-1">
+                  <BlogPanel
+                    content={data?.content}
+                    contentError={data?.contentError ?? null}
+                    pendingChanges={changes}
+                    saving={savingField}
+                    onEditField={(field, oldVal, newVal) =>
+                      persistField(field, oldVal, newVal, guessFieldType(field, newVal))
+                    }
+                    onAddPost={handleAddPost}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
