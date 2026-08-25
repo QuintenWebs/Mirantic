@@ -12,7 +12,13 @@ const REQUIRED = [
   "AUTH0_M2M_CLIENT_SECRET",
 ] as const;
 
-const OPTIONAL = ["GITHUB_TOKEN", "BLOB_READ_WRITE_TOKEN", "APP_URL"] as const;
+const OPTIONAL = [
+  "GITHUB_TOKEN",
+  "BLOB_READ_WRITE_TOKEN",
+  "RESEND_API_KEY",
+  "INVITE_FROM",
+  "APP_URL",
+] as const;
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   const env: Record<string, boolean> = {};
