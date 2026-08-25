@@ -57,8 +57,14 @@ export function useCmsBridge({ siteUrl, onReady, onFieldClicked }: UseCmsBridgeO
   const sendInit = useCallback(
     (
       changes: { field: string; value: unknown; fieldType: FieldType }[],
-      newPosts: { tempId: string; post: Record<string, unknown> }[]
-    ) => send({ source: "cms-host", type: "init", changes, newPosts }),
+      newPosts: { tempId: string; post: Record<string, unknown> }[],
+      editMode: boolean
+    ) => send({ source: "cms-host", type: "init", changes, newPosts, editMode }),
+    [send]
+  );
+
+  const setEditMode = useCallback(
+    (editMode: boolean) => send({ source: "cms-host", type: "set-edit-mode", editMode }),
     [send]
   );
 
@@ -92,6 +98,7 @@ export function useCmsBridge({ siteUrl, onReady, onFieldClicked }: UseCmsBridgeO
   return {
     iframeRef,
     sendInit,
+    setEditMode,
     applyChange,
     applyBlogPost,
     removeBlogPost,

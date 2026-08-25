@@ -26,7 +26,11 @@ export type HostMessage =
       // All pending field changes to apply on load, plus any pending new posts.
       changes: { field: string; value: unknown; fieldType: FieldType }[];
       newPosts: { tempId: string; post: Record<string, unknown> }[];
+      // Whether clicks select fields (edit) or follow the site's own links
+      // (browse). Sent on every init so it survives navigation inside the site.
+      editMode: boolean;
     }
+  | { source: "cms-host"; type: "set-edit-mode"; editMode: boolean }
   | {
       source: "cms-host";
       type: "apply-change";

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Rocket, AlertTriangle } from "lucide-react";
+import { X, Rocket, AlertTriangle, MousePointerClick, Compass } from "lucide-react";
 import { toast } from "sonner";
 import { useApi } from "@/lib/api";
 import { useFetch } from "@/lib/useFetch";
@@ -37,6 +37,7 @@ export default function Editor() {
   const [savingField, setSavingField] = useState(false);
   const [tab, setTab] = useState<"changes" | "blog">("changes");
   const [publishOpen, setPublishOpen] = useState(false);
+  const [editMode, setEditMode] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [bridgeReady, setBridgeReady] = useState(false);
   const [bridgeWarning, setBridgeWarning] = useState(false);
@@ -81,10 +82,19 @@ export default function Editor() {
     const newPosts = changes
       .filter((c) => c.changeType === "blog_post_add")
       .map((c) => ({ tempId: c.id, post: c.newValue as Record<string, unknown> }));
-    bridge.sendInit(fieldChanges, newPosts);
+    bridge.sendInit(fieldChanges, newPosts, editMode);
     // Only re-init on (re)connection, not on every keystroke.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bridgeReady]);
+
+  // Pushing the mode separately keeps the toggle instant rather than waiting for
+  // a reconnect.
+  useEffect(() => {
+    if (!bridgeReady) return;
+    bridge.setEditMode(editMode);
+    if (!editMode) setSelected(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editMode, bridgeReady]);
 
   // Warn if the bridge never connects (script missing / wrong origin).
   function handleIframeLoad() {
@@ -225,13 +235,19 @@ export default function Editor() {
       {/* Sidebar — fixed width, always visible. */}
       <aside className="flex w-[380px] shrink-0 flex-col border-l bg-background">
         <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <Link
-            to="/"
-            className="inline-flex min-w-0 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4 shrink-0" />
-            <span className="truncate font-medium text-foreground">{site.name}</span>
-          </Link>
+          <div className="flex min-w-0 items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+              asChild
+            >
+              <Link to="/" title="Close editor" aria-label="Close editor">
+                <X className="h-4 w-4" />
+              </Link>
+            </Button>
+            <span className="truncate text-sm font-medium">{site.name}</span>
+          </div>
           <Button
             size="sm"
             disabled={fieldChangeCount === 0 || !canPublish}
@@ -246,6 +262,34 @@ export default function Editor() {
             )}
           </Button>
         </div>
+
+        <div className="flex items-center gap-1 border-b bg-muted/40 p-1.5">
+          {[
+            { value: true, label: "Edit", icon: MousePointerClick },
+            { value: false, label: "Browse", icon: Compass },
+          ].map(({ value, label, icon: Icon }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setEditMode(value)}
+              aria-pressed={editMode === value}
+              className={
+                "inline-flex flex-1 items-center justify-center gap-1.5 rounded px-2 py-1.5 text-sm font-medium transition-colors " +
+                (editMode === value
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground")
+              }
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="border-b px-4 py-2 text-xs text-muted-foreground">
+          {editMode
+            ? "Click anything on the page to edit it."
+            : "Links work normally — navigate to the page you want, then switch back to Edit."}
+        </p>
 
         {!canEdit && (
           <div className="border-b bg-muted/50 px-4 py-2 text-xs text-muted-foreground">

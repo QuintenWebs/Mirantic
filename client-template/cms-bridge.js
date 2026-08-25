@@ -48,14 +48,17 @@
 
     switch (data.type) {
       case "init":
-        editMode = true;
         enableEditing();
+        applyEditMode(data.editMode !== false);
         (data.changes || []).forEach(function (c) {
           applyValue(c.field, c.value, c.fieldType);
         });
         (data.newPosts || []).forEach(function (p) {
           addBlogPost(p.tempId, p.post);
         });
+        break;
+      case "set-edit-mode":
+        applyEditMode(!!data.editMode);
         break;
       case "apply-change":
         applyValue(data.field, data.value, data.fieldType);
@@ -106,8 +109,23 @@
   }
 
   // ── Editing interactions ──────────────────────────────────────────────────
+  //
+  // In browse mode the listeners stay attached but do nothing, so the site's own
+  // links work normally and the editor can be used to navigate to the page you
+  // actually want to edit.
+  function applyEditMode(on) {
+    editMode = on;
+    document.body.classList.toggle("cms-edit-mode", on);
+    if (!on) {
+      clearTextOutline();
+      hideImageOverlay();
+    }
+  }
+
+  var listenersAttached = false;
   function enableEditing() {
-    document.body.classList.add("cms-edit-mode");
+    if (listenersAttached) return;
+    listenersAttached = true;
     document.addEventListener("mouseover", onMouseOver, true);
     document.addEventListener("mouseout", onMouseOut, true);
     document.addEventListener("click", onClick, true);

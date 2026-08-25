@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
-import { ExternalLink, FileText } from "lucide-react";
+import { ExternalLink, FileText, Pencil } from "lucide-react";
 import { useFetch } from "@/lib/useFetch";
 import type { Site } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState, EmptyState } from "@/components/states";
 import { useMe } from "@/lib/me";
@@ -58,27 +59,37 @@ export default function SiteSelector() {
       {!loading && !error && sites && sites.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sites.map((site) => (
-            <Link key={site.id} to={`/sites/${site.id}`} className="group">
-              <Card className="h-full transition-colors group-hover:border-primary/50">
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base">{site.name}</CardTitle>
-                    {site.hasBlog && (
-                      <Badge variant="secondary" className="shrink-0">
-                        <FileText className="mr-1 h-3 w-3" />
-                        Blog
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                    {prettyUrl(site.url)}
-                    <ExternalLink className="h-3 w-3" />
-                  </span>
-                </CardContent>
-              </Card>
-            </Link>
+            <Card key={site.id} className="flex h-full flex-col">
+              <CardHeader>
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base">{site.name}</CardTitle>
+                  {site.hasBlog && (
+                    <Badge variant="secondary" className="shrink-0">
+                      <FileText className="mr-1 h-3 w-3" />
+                      Blog
+                    </Badge>
+                  )}
+                </div>
+                <p className="truncate text-sm text-muted-foreground">{prettyUrl(site.url)}</p>
+              </CardHeader>
+              {/* Two destinations, so neither is a guess: the live site in a new
+                  tab, or the editor. Previously the whole card went to the
+                  editor while the URL inside it looked like an external link. */}
+              <CardContent className="mt-auto flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" asChild>
+                  <a href={site.url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                    Open site
+                  </a>
+                </Button>
+                <Button size="sm" className="flex-1" asChild>
+                  <Link to={`/sites/${site.id}`}>
+                    <Pencil className="h-4 w-4" />
+                    Edit site
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
