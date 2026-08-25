@@ -16,7 +16,13 @@ export interface SendResult {
  * created in Auth0 and the database. The caller reports `sent` to the admin and
  * still hands back the invite link to pass along by hand.
  */
-async function send(to: string, subject: string, html: string, text: string): Promise<SendResult> {
+async function send(
+  to: string,
+  subject: string,
+  html: string,
+  text: string,
+  replyTo?: string
+): Promise<SendResult> {
   if (!RESEND_API_KEY) {
     return { sent: false, reason: "RESEND_API_KEY is not set" };
   }
@@ -27,7 +33,16 @@ async function send(to: string, subject: string, html: string, text: string): Pr
         authorization: `Bearer ${RESEND_API_KEY}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ from: INVITE_FROM, to: [to], subject, html, text }),
+      body: JSON.stringify({
+        from: INVITE_FROM,
+        to: [to],
+        subject,
+        html,
+        text,
+        // Mail is sent from a no-mailbox sending domain, so a reply needs
+        // somewhere real to land.
+        ...(replyTo ? { reply_to: replyTo } : {}),
+      }),
     });
     if (!res.ok) {
       let detail = `status ${res.status}`;
@@ -111,9 +126,14 @@ If you weren't expecting this, you can ignore this email.`;
   return { subject, html, text };
 }
 
-export async function sendInviteEmail(to: string, name: string, inviteUrl: string): Promise<SendResult> {
+export async function sendInviteEmail(
+  to: string,
+  name: string,
+  inviteUrl: string,
+  replyTo?: string
+): Promise<SendResult> {
   const { subject, html, text } = inviteEmail(name, inviteUrl);
-  return send(to, subject, html, text);
+  return send(to, subject, html, text, replyTo);
 }
 
 /** Link to choose a new password, requested by the user from Settings. */

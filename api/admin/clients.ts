@@ -82,7 +82,7 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     if (!user.auth0Id) throw new HttpError(400, "This client has no Auth0 account to invite");
 
     const inviteUrl = await createInviteTicket(user.auth0Id);
-    const mail = await sendInviteEmail(user.email, user.name, inviteUrl);
+    const mail = await sendInviteEmail(user.email, user.name, inviteUrl, admin.email);
     res.status(200).json({ inviteUrl, emailSent: mail.sent, emailError: mail.reason });
     return;
   }
@@ -115,7 +115,7 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
 
     // Email failures must not lose the invitation: the account exists either
     // way, so report the outcome and still hand back the link to send by hand.
-    const mail = await sendInviteEmail(normalizedEmail, created.name, inviteUrl);
+    const mail = await sendInviteEmail(normalizedEmail, created.name, inviteUrl, admin.email);
 
     res.status(201).json({
       client: created,
