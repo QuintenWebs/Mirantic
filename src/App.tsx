@@ -10,6 +10,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import Clients from "@/pages/admin/Clients";
 import ClientDetail from "@/pages/admin/ClientDetail";
 import AdminSites from "@/pages/admin/AdminSites";
+import AddSiteGuide from "@/pages/admin/AddSiteGuide";
 
 export default function App() {
   const configError = assertAuthConfig();
@@ -79,6 +80,18 @@ export default function App() {
             <AdminRoute>
               <AppLayout>
                 <ClientDetail />
+              </AppLayout>
+            </AdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/guide"
+        element={
+          <ProtectedRoute>
+            <AdminRoute>
+              <AppLayout>
+                <AddSiteGuide />
               </AppLayout>
             </AdminRoute>
           </ProtectedRoute>

@@ -3,7 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LogOut, LayoutGrid, Users, Globe, LayoutDashboard,
-  ChevronDown, Settings, Shield, User,
+  ChevronDown, Settings, Shield, User, BookOpen,
 } from "lucide-react";
 import { useMe } from "@/lib/me";
 import { useViewMode, type ViewMode } from "@/lib/view-mode";
@@ -170,6 +170,9 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
             </NavItem>
             <NavItem to="/admin/sites" icon={Globe} onNavigate={onNavigate}>
               Manage sites
+            </NavItem>
+            <NavItem to="/admin/guide" icon={BookOpen} onNavigate={onNavigate}>
+              Setup guide
             </NavItem>
           </>
         )}

@@ -257,6 +257,15 @@ export default function AdminSites() {
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit site" : "Add site"}</DialogTitle>
+            {!editingId && (
+              <p className="text-sm text-muted-foreground">
+                First time?{" "}
+                <Link to="/admin/guide" className="font-medium text-primary hover:underline">
+                  Read the setup guide
+                </Link>{" "}
+                — the site's repo needs preparing before it can be edited here.
+              </p>
+            )}
           </DialogHeader>
 
           <div className="space-y-3">
