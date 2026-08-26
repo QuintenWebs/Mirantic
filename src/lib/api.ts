@@ -88,6 +88,8 @@ export interface ApiClient {
  * and if the Auth0 API does not allow it no refresh token is ever stored, so
  * every silent call fails for a user who is otherwise perfectly logged in.
  */
+const REAUTH_FLAG = "mirantic:reauth-attempted";
+
 const UNRECOVERABLE = [
   "missing_refresh_token",
   "invalid_grant",
@@ -110,10 +112,22 @@ export function useApi(): ApiClient {
 
   const getToken = useCallback<TokenGetter>(async () => {
     try {
-      return await getAccessTokenSilently();
+      const token = await getAccessTokenSilently();
+      sessionStorage.removeItem(REAUTH_FLAG);
+      return token;
     } catch (err) {
       if (isUnrecoverable(err)) {
-        // Send them back through login, returning to where they were.
+        // Re-authenticate at most once per tab. If a fresh login still cannot
+        // produce a token — which is what happens while the Auth0 API has
+        // Allow Offline Access switched off — a second redirect would bounce
+        // the user round a loop instead of telling them anything.
+        if (sessionStorage.getItem(REAUTH_FLAG)) {
+          throw new Error(
+            "Signing in again did not produce a usable session. In Auth0, the API " +
+              "needs Allow Offline Access enabled for refresh tokens to be issued."
+          );
+        }
+        sessionStorage.setItem(REAUTH_FLAG, "1");
         await loginWithRedirect({
           appState: { returnTo: window.location.pathname + window.location.search },
         });
