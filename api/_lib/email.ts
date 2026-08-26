@@ -83,8 +83,7 @@ export function inviteEmail(name: string, inviteUrl: string): { subject: string;
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e7eb;border-radius:12px;padding:32px;">
             <tr>
               <td style="padding-bottom:24px;">
-                <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#4A6FA5;color:#ffffff;border-radius:6px;font-weight:700;font-size:14px;">M</span>
-                <span style="font-size:15px;font-weight:600;margin-left:8px;">Mirantic</span>
+                <img src="${APP_URL}/brand/logo-primary-trimmed.png" alt="Mirantic" width="189" height="43" style="display:block;border:0;height:43px;width:189px;" />
               </td>
             </tr>
             <tr>
@@ -150,8 +149,7 @@ export async function sendPasswordResetEmail(
       <tr><td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e7eb;border-radius:12px;padding:32px;">
           <tr><td style="padding-bottom:24px;">
-            <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#4A6FA5;color:#ffffff;border-radius:6px;font-weight:700;font-size:14px;">M</span>
-            <span style="font-size:15px;font-weight:600;margin-left:8px;">Mirantic</span>
+            <img src="${APP_URL}/brand/logo-primary-trimmed.png" alt="Mirantic" width="189" height="43" style="display:block;border:0;height:43px;width:189px;" />
           </td></tr>
           <tr><td style="font-size:20px;font-weight:600;padding-bottom:12px;">Choose a new password</td></tr>
           <tr><td style="font-size:15px;line-height:1.6;color:#52606d;padding-bottom:24px;">
@@ -187,8 +185,7 @@ export async function sendTestEmail(to: string): Promise<SendResult> {
       <tr><td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e7eb;border-radius:12px;padding:32px;">
           <tr><td style="padding-bottom:24px;">
-            <span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;background:#4A6FA5;color:#ffffff;border-radius:6px;font-weight:700;font-size:14px;">M</span>
-            <span style="font-size:15px;font-weight:600;margin-left:8px;">Mirantic</span>
+            <img src="${APP_URL}/brand/logo-primary-trimmed.png" alt="Mirantic" width="189" height="43" style="display:block;border:0;height:43px;width:189px;" />
           </td></tr>
           <tr><td style="font-size:20px;font-weight:600;padding-bottom:12px;">Email is working</td></tr>
           <tr><td style="font-size:15px;line-height:1.6;color:#52606d;">

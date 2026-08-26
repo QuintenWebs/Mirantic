@@ -1,5 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#4A6FA5" />
-  <text x="16" y="23" font-family="system-ui, sans-serif" font-size="20"
-        font-weight="700" fill="#fff" text-anchor="middle">M</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#0b1220" rx="40"/>
+  <path d="M100 20 Q113 87 180 100 Q113 113 100 180 Q87 113 20 100 Q87 87 100 20 Z" fill="#46c5f2"/>
 </svg>

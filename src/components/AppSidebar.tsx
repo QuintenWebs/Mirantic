@@ -9,6 +9,7 @@ import { useMe } from "@/lib/me";
 import { useViewMode, type ViewMode } from "@/lib/view-mode";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { Logo } from "@/components/Logo";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
   DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
@@ -145,11 +146,8 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full w-64 flex-col bg-sidebar">
       <div className="flex h-14 items-center gap-2 px-4">
-        <Link to="/" onClick={onNavigate} className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">
-            M
-          </div>
-          <span className="text-sm font-semibold text-sidebar-foreground">Mirantic</span>
+        <Link to="/" onClick={onNavigate} aria-label="Mirantic">
+          <Logo tone="light" height={18} />
         </Link>
       </div>
 

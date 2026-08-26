@@ -3,6 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CenteredSpinner } from "@/components/states";
+import { Logo } from "@/components/Logo";
 
 /**
  * There is no local sign-in form: Auth0's branded Universal Login is the sign-in
@@ -49,11 +50,8 @@ export default function Login() {
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-muted/30 p-6">
       <div className="w-full max-w-sm rounded-lg border bg-card p-8 shadow-sm">
-        <div className="mb-6 flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-primary text-sm font-bold text-primary-foreground">
-            M
-          </div>
-          <span className="text-base font-semibold">Mirantic CMS</span>
+        <div className="mb-6">
+          <Logo height={20} />
         </div>
         <h1 className="text-lg font-semibold">Sign-in failed</h1>
         <p className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
