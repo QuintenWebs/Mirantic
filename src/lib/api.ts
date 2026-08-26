@@ -78,13 +78,51 @@ export interface ApiClient {
   upload<T>(path: string, file: File): Promise<T>;
 }
 
-export function useApi(): ApiClient {
-  const { getAccessTokenSilently } = useAuth0();
+/**
+ * Errors that mean "this session can no longer produce a token" rather than
+ * "something went wrong". They are unrecoverable in place — the only way out is
+ * to authenticate again — so the app re-authenticates instead of showing an
+ * error the user cannot act on.
+ *
+ * missing_refresh_token is the one that bites: the SDK asks for offline_access,
+ * and if the Auth0 API does not allow it no refresh token is ever stored, so
+ * every silent call fails for a user who is otherwise perfectly logged in.
+ */
+const UNRECOVERABLE = [
+  "missing_refresh_token",
+  "invalid_grant",
+  "login_required",
+  "consent_required",
+  "interaction_required",
+];
 
-  const getToken = useCallback<TokenGetter>(
-    () => getAccessTokenSilently(),
-    [getAccessTokenSilently]
+function isUnrecoverable(err: unknown): boolean {
+  const code = (err as { error?: string })?.error;
+  const message = err instanceof Error ? err.message : String(err ?? "");
+  return (
+    (typeof code === "string" && UNRECOVERABLE.includes(code)) ||
+    /missing refresh token/i.test(message)
   );
+}
+
+export function useApi(): ApiClient {
+  const { getAccessTokenSilently, loginWithRedirect } = useAuth0();
+
+  const getToken = useCallback<TokenGetter>(async () => {
+    try {
+      return await getAccessTokenSilently();
+    } catch (err) {
+      if (isUnrecoverable(err)) {
+        // Send them back through login, returning to where they were.
+        await loginWithRedirect({
+          appState: { returnTo: window.location.pathname + window.location.search },
+        });
+        // The redirect ends this page; nothing after it runs.
+        return new Promise<string>(() => {});
+      }
+      throw err;
+    }
+  }, [getAccessTokenSilently, loginWithRedirect]);
 
   return useMemo<ApiClient>(
     () => ({
