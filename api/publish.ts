@@ -5,6 +5,7 @@ import { withErrors, methodNotAllowed, readBody } from "./_lib/http.js";
 import { requireSiteAccess } from "./_lib/access.js";
 import { db, schema } from "./_lib/db.js";
 import { fetchContentFile, commitContentFile, triggerDeployHook } from "./_lib/github.js";
+import { captureScreenshot } from "./_lib/screenshot.js";
 import { applyChanges } from "./_lib/content.js";
 
 // POST /api/publish { siteId } → commit all pending changes to content.json,
@@ -66,9 +67,23 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     .set({ lastPublishedAt: publishedAt })
     .where(eq(schema.sites.id, siteId));
 
+  // 6. Refresh the card's screenshot. Deliberately last and non-fatal: the
+  //    content is already committed, so a screenshot service being slow or down
+  //    must not turn a successful publish into an error. It is also given a
+  //    moment first — capturing immediately would photograph the old build,
+  //    since the host has only just been told to rebuild.
+  const screenshotUrl = await captureScreenshot(site.url);
+  if (screenshotUrl) {
+    await db
+      .update(schema.sites)
+      .set({ screenshotUrl, screenshotAt: new Date() })
+      .where(eq(schema.sites.id, siteId));
+  }
+
   res.status(200).json({
     published: changes.length,
     commitSha,
     deployTriggered: Boolean(site.deployHookUrl),
+    screenshotUpdated: Boolean(screenshotUrl),
   });
 });

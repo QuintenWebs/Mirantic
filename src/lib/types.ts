@@ -27,6 +27,8 @@ export interface Site {
   contentPath: string;
   deployHookUrl: string | null;
   hasBlog: boolean;
+  /** Home-page screenshot, refreshed on publish. Null until first published. */
+  screenshotUrl: string | null;
   lastPublishedAt: string | null;
   createdAt: string;
   // Present on list endpoints.

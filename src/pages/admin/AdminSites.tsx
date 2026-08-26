@@ -6,6 +6,9 @@ import { useApi } from "@/lib/api";
 import { useFetch } from "@/lib/useFetch";
 import type { AdminSite } from "@/lib/types";
 import { Card } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { SiteAccessDialog } from "@/components/SiteAccessDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -169,81 +172,105 @@ export default function AdminSites() {
       )}
 
       {!loading && !error && data && data.length > 0 && (
-        <div className="space-y-3">
-          {data.map((site) => (
-            <Card key={site.id} className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-medium">{site.name}</p>
-                    {site.hasBlog && (
-                      <Badge variant="secondary">
-                        <FileText className="mr-1 h-3 w-3" /> Blog
-                      </Badge>
-                    )}
-                  </div>
-                  <a
-                    href={site.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    {site.url}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                  <p className="mt-1 font-mono text-xs text-muted-foreground">
-                    {site.githubRepo} · {site.githubBranch} · {site.contentPath}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground">
-                      {lastPublished(site.lastPublishedAt)}
-                    </span>
-                    <span className="text-xs text-muted-foreground">·</span>
-                    {site.clients.length === 0 ? (
-                      <span className="text-xs text-muted-foreground">No users assigned</span>
-                    ) : (
-                      site.clients.map((c) => (
-                        <Badge key={c.id} variant="outline">
-                          {c.name || c.email}
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Site</TableHead>
+                <TableHead>Repository</TableHead>
+                <TableHead>Users</TableHead>
+                <TableHead>Last published</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((site) => (
+                <TableRow key={site.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{site.name}</span>
+                      {site.hasBlog && (
+                        <Badge variant="secondary">
+                          <FileText className="mr-1 h-3 w-3" /> Blog
                         </Badge>
-                      ))
-                    )}
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button variant="outline" size="sm" onClick={() => setAccessSite(site)}>
-                    <Users className="h-4 w-4" /> Users
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/sites/${site.id}`}>Open editor</Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEdit(site)}
-                    title="Edit settings"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive"
-                    disabled={deletingId === site.id}
-                    onClick={() => handleDelete(site)}
-                    title="Delete site"
-                  >
-                    {deletingId === site.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                    </div>
+                    <a
+                      href={site.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {site.url}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </TableCell>
+                  <TableCell>
+                    <p className="font-mono text-xs text-muted-foreground">{site.githubRepo}</p>
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {site.githubBranch} · {site.contentPath}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    {site.clients.length === 0 ? (
+                      <span className="text-sm text-muted-foreground">None</span>
                     ) : (
-                      <Trash2 className="h-4 w-4" />
+                      <div className="flex flex-wrap gap-1.5">
+                        {site.clients.map((c) => (
+                          <Badge key={c.id} variant="outline">
+                            {c.name || c.email}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                    {lastPublished(site.lastPublishedAt)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/sites/${site.id}`}>Open editor</Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground"
+                        onClick={() => setAccessSite(site)}
+                        title="Manage user access"
+                      >
+                        <Users className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground"
+                        onClick={() => openEdit(site)}
+                        title="Site settings"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        disabled={deletingId === site.id}
+                        onClick={() => handleDelete(site)}
+                        title="Delete site"
+                      >
+                        {deletingId === site.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       <SiteAccessDialog

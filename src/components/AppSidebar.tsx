@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LogOut, LayoutGrid, Users, Globe, LayoutDashboard,
+  LogOut, LayoutGrid, Users, LayoutDashboard,
   ChevronDown, Settings, Shield, User, BookOpen,
 } from "lucide-react";
 import { useMe } from "@/lib/me";
@@ -22,25 +22,29 @@ function initials(name: string, email: string): string {
 }
 
 function NavItem({
-  to, icon: Icon, children, onNavigate,
+  to, icon: Icon, children, onNavigate, exact,
 }: {
   to: string;
   icon: typeof Users;
   children: string;
   onNavigate?: () => void;
+  /** Match this path only, not its children — for section roots like /admin. */
+  exact?: boolean;
 }) {
   const { pathname } = useLocation();
-  const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+  const active = exact || to === "/" ? pathname === to : pathname === to || pathname.startsWith(to + "/");
   return (
     <Link
       to={to}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+        // A marker plus a light wash, rather than a filled block that reads as
+        // permanently selected whichever page you are on.
         active
-          ? "bg-sidebar-raised text-sidebar-foreground"
-          : "text-sidebar-muted hover:bg-sidebar-raised/60 hover:text-sidebar-foreground"
+          ? "bg-sidebar-raised/70 font-medium text-sidebar-foreground before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:rounded-full before:bg-primary"
+          : "text-sidebar-muted hover:bg-sidebar-raised/40 hover:text-sidebar-foreground"
       )}
     >
       <Icon className="h-4 w-4 shrink-0" />
@@ -151,28 +155,28 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-        <NavItem to="/" icon={LayoutGrid} onNavigate={onNavigate}>
-          Sites
-        </NavItem>
-        {isAdmin && (
+      <nav className="flex-1 overflow-y-auto px-3 py-2">
+        {isAdmin ? (
           <>
-            <p className="px-3 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wide text-sidebar-muted">
-              Admin
-            </p>
-            <NavItem to="/admin" icon={LayoutDashboard} onNavigate={onNavigate}>
+            <NavItem to="/admin" icon={LayoutDashboard} onNavigate={onNavigate} exact>
               Dashboard
             </NavItem>
-            <NavItem to="/admin/clients" icon={Users} onNavigate={onNavigate}>
-              Users
-            </NavItem>
-            <NavItem to="/admin/sites" icon={Globe} onNavigate={onNavigate}>
-              Manage sites
-            </NavItem>
-            <NavItem to="/admin/guide" icon={BookOpen} onNavigate={onNavigate}>
-              Setup guide
-            </NavItem>
+            <div className="space-y-1 pt-6">
+              <NavItem to="/admin/sites" icon={LayoutGrid} onNavigate={onNavigate}>
+                Sites
+              </NavItem>
+              <NavItem to="/admin/clients" icon={Users} onNavigate={onNavigate}>
+                Users
+              </NavItem>
+              <NavItem to="/admin/guide" icon={BookOpen} onNavigate={onNavigate}>
+                Setup guide
+              </NavItem>
+            </div>
           </>
+        ) : (
+          <NavItem to="/" icon={LayoutGrid} onNavigate={onNavigate}>
+            Sites
+          </NavItem>
         )}
       </nav>
 

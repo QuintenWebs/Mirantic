@@ -41,6 +41,10 @@ export const sites = pgTable("sites", {
   contentPath: text("content_path").notNull().default("src/content.json"),
   deployHookUrl: text("deploy_hook_url"),
   hasBlog: boolean("has_blog").notNull().default(false),
+  // A screenshot of the home page, recaptured on publish so the card shows what
+  // was actually shipped rather than a stale picture.
+  screenshotUrl: text("screenshot_url"),
+  screenshotAt: timestamp("screenshot_at", { withTimezone: true }),
   lastPublishedAt: timestamp("last_published_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

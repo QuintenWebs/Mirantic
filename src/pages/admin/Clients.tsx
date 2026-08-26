@@ -9,6 +9,9 @@ import { useMe } from "@/lib/me";
 import { useFetch } from "@/lib/useFetch";
 import type { Client, InviteResult } from "@/lib/types";
 import { Card } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -142,87 +145,127 @@ export default function Clients() {
       )}
 
       {!loading && !error && data && data.length > 0 && (
-        <div className="space-y-3">
-          {data.map((client) => (
-            <Card key={client.id} className="flex items-center justify-between p-4">
-              <Link to={`/admin/clients/${client.id}`} className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate font-medium">{client.name || client.email}</p>
-                  {client.role === "admin" && <Badge variant="secondary">Admin</Badge>}
-                  {!client.active && <Badge variant="destructive">Deactivated</Badge>}
-                  {client.id === me?.id && (
-                    <span className="text-xs text-muted-foreground">you</span>
-                  )}
-                </div>
-                <p className="truncate text-sm text-muted-foreground">{client.email}</p>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {client.sites.length === 0 ? (
-                    <span className="text-xs text-muted-foreground">No sites assigned</span>
-                  ) : (
-                    client.sites.map((s) => (
-                      <Badge key={s.id} variant="secondary">
-                        {s.name}
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Sites</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((client) => (
+                <TableRow key={client.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground"
+                        aria-hidden
+                      >
+                        {initials(client.name, client.email)}
+                      </span>
+                      <div className="min-w-0">
+                        <Link
+                          to={`/admin/clients/${client.id}`}
+                          className="block truncate font-medium hover:underline"
+                        >
+                          {client.name || client.email}
+                          {client.id === me?.id && (
+                            <span className="ml-1.5 text-xs font-normal text-muted-foreground">you</span>
+                          )}
+                        </Link>
+                        <p className="truncate text-sm text-muted-foreground">{client.email}</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {client.active ? (
+                      <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                        Active
                       </Badge>
-                    ))
-                  )}
-                </div>
-              </Link>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground"
-                  disabled={resendingId === client.id}
-                  onClick={() => handleResend(client)}
-                  title="Re-send invite email"
-                >
-                  {resendingId === client.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Mail className="h-4 w-4" />
-                  )}
-                </Button>
-                {client.id !== me?.id && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground"
-                    disabled={togglingId === client.id}
-                    onClick={() => handleActive(client, !client.active)}
-                    title={client.active ? "Deactivate account" : "Reactivate account"}
-                  >
-                    {togglingId === client.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : client.active ? (
-                      <Ban className="h-4 w-4" />
                     ) : (
-                      <RotateCcw className="h-4 w-4" />
+                      <Badge variant="destructive">Deactivated</Badge>
                     )}
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-destructive"
-                  disabled={deletingId === client.id || client.id === me?.id}
-                  onClick={() => handleDelete(client)}
-                  title="Remove client"
-                >
-                  {deletingId === client.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button variant="ghost" size="icon" asChild>
-                  <Link to={`/admin/clients/${client.id}`}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {client.role === "admin" ? "Administrator" : "Client"}
+                  </TableCell>
+                  <TableCell>
+                    {client.sites.length === 0 ? (
+                      <span className="text-sm text-muted-foreground">None</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {client.sites.map((site) => (
+                          <Badge key={site.id} variant="secondary">
+                            {site.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground"
+                        disabled={resendingId === client.id}
+                        onClick={() => handleResend(client)}
+                        title="Re-send invite email"
+                      >
+                        {resendingId === client.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Mail className="h-4 w-4" />
+                        )}
+                      </Button>
+                      {client.id !== me?.id && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground"
+                          disabled={togglingId === client.id}
+                          onClick={() => handleActive(client, !client.active)}
+                          title={client.active ? "Deactivate account" : "Reactivate account"}
+                        >
+                          {togglingId === client.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : client.active ? (
+                            <Ban className="h-4 w-4" />
+                          ) : (
+                            <RotateCcw className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        disabled={deletingId === client.id || client.id === me?.id}
+                        onClick={() => handleDelete(client)}
+                        title={client.id === me?.id ? "You cannot delete your own account" : "Delete user"}
+                      >
+                        {deletingId === client.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-muted-foreground" asChild>
+                        <Link to={`/admin/clients/${client.id}`} title="Open user">
+                          <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       <Dialog open={addOpen} onOpenChange={(o) => (o ? setAddOpen(true) : closeAdd())}>
@@ -303,4 +346,11 @@ export default function Clients() {
       </Dialog>
     </div>
   );
+}
+
+/** Initials for the avatar, from the name if there is one, else the address. */
+function initials(name: string, email: string): string {
+  const base = name?.trim() || email;
+  const parts = base.split(/[\s@.]+/).filter(Boolean);
+  return (parts[0]?.[0] ?? "?").toUpperCase() + (parts[1]?.[0]?.toUpperCase() ?? "");
 }
